@@ -1,0 +1,226 @@
+# Neonate Incubator
+
+//#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#define ADCPIN 1
+#include <Servo.h>
+#include <dht.h>
+int DHTPIN = 2;
+dht DHT;
+
+//fan
+#define fan 10
+
+//servo connections
+int pos = 15;    // variable to store the servo position
+int servoPin = 9;
+int servoDelay = 25;
+Servo myPointer;
+
+// Set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+//Alarm pin initialisation
+int alarmPin = 13;
+
+//inisialise led
+int reddigital;
+int bldigital;
+int grdigital;
+
+
+
+void setup()
+{
+/**
+  //dht connections
+  DHT.read11(DHTPIN);
+  float Temperature = DHT.temperature();
+  float humidity = DHT.humidity();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("DHT11: ");
+    lcd.setCursor(0, 1);
+    lcd.print("Temp/Humidity sensor");
+    delay(1000);
+
+**/
+    // attaches the servo on pin 9 to the servo object
+    myPointer.attach(servoPin);
+
+    //rgb
+    pinMode(3,OUTPUT);
+    pinMode(5,OUTPUT);
+    pinMode(6,OUTPUT);
+
+
+  // motor
+  pinMode(fan,OUTPUT);
+  //initially turn motor off
+  analogWrite(fan,0);
+    /**
+      //switching to 1.1 internal reference for the lm35
+      analogReference(INTERNAL);
+      lcd.setCursor(0, 0);
+      lcd.print("TEMP('C): ");
+      delay(1000);
+      **/
+
+    lcd.begin();
+    lcd.backlight();
+    Serial.begin(9600);
+
+
+  }
+
+  void loop()
+{
+
+  //DHT11
+  DHT.read11(DHTPIN);
+ 
+    //lcd display
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Temp:  ");
+    lcd.print(DHT.temperature);
+    lcd.print(" *C ");
+    lcd.setCursor(0, 1);
+    lcd.print("Humid:  ");
+    lcd.print(DHT.humidity);
+    delay(2000);
+
+
+
+     // Fan ON
+    int speed = 0;
+    analogWrite(fan,map(speed,0,9,0,255));
+    delay(1000);
+
+    /**
+      //reading from the lm35
+      Temperature = analogRead(A0);
+      //Temperature form ADC value
+      Temperature = Temperature * 0.488;
+      **/
+
+      //HUMIDITY CONTROL
+    if(DHT.humidity < 45){
+     // HEATER2 ON
+     // FAN2 ON
+      } else if (DHT.humidity >= 38.5) {
+    // Heater2 OFF
+
+    // Fan2 OFF
+   }else if (DHT.humidity <= 38 && DHT.humidity >= 36.5) {
+    // Heater2 OFF
+
+    // Fan2 OFF
+
+   }
+       
+       //TEMPERATURE CONTROL
+    if (DHT.temperature < 36.5) {
+
+    // Heater ON
+
+    // Fan ON
+    int speed = 0;
+    analogWrite(fan,map(speed,0,9,0,255));
+    delay(1000);
+
+    // servo open/allow heat
+    myPointer.write(170);
+    delay(servoDelay);
+    
+     // Alarm ON
+  tone(alarmPin, 550, 1000);
+  delay(1000);
+
+  
+  //green LED ON
+  analogWrite(3,0);
+  analogWrite(5,350);
+analogWrite(6,0);
+  delay(1000);
+
+    Serial.println("Temperature below required");
+    delay(2000);
+
+  } else if (DHT.temperature >= 38.5) {
+    // Heater OFF
+
+    // Fan OFF
+
+   // Alarm ON
+  tone(alarmPin, 700, 100 );
+  delay(1000);
+  
+    //servo close/ No heat
+    myPointer.write(15);
+      delay(servoDelay);
+
+       //green LED ON
+  analogWrite(3,0);
+  analogWrite(5,0);
+analogWrite(6,250);
+  delay(1000);
+  
+    Serial.println("Temperature above required");
+    delay(2000);
+
+  } else if (DHT.temperature <= 38 && DHT.temperature >= 36.5) {
+    // Heater OFF
+
+    // Fan OFF
+
+    //servo close
+    myPointer.write(15);
+      delay(servoDelay);
+      
+    Serial.println("Temperature is good");
+    delay(2000);
+
+    //green led ON
+     analogWrite(3,250);
+     analogWrite(5,0);
+     analogWrite(6,0);
+    delay(1000);
+  }
+
+ else {
+  // Heater OFF
+
+  // Fan OFF
+
+ //servo close
+    myPointer.write(15);
+      delay(servoDelay);
+
+
+  // Alarm ON
+  tone(alarmPin, 558, 1000);
+  delay(100);
+
+
+  //RED LED ON
+   analogWrite(3,0);
+     analogWrite(5,0);
+     analogWrite(6,250);
+  delay(500);
+
+  //display results
+  Serial.println("Incubator error");
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Err Temp: ");
+  lcd.print(DHT.temperature);
+  lcd.setCursor(0, 1);
+  lcd.print("Err Humid: ");
+  lcd.print(DHT.humidity);
+  delay(2000);
+
+}
+
+
+}
